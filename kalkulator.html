@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kalkulator Karipap</title>
+<style>
+  :root{--bg:#f1f5f4;--ink:#12302f;--card:#fff;--teal:#0f5c5c;--amber:#f2b632;--line:#cfdcda;--red:#b3261e}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:Georgia,"Times New Roman",serif;line-height:1.5}
+  header{background:var(--teal);color:#fff;padding:24px 20px;border-bottom:8px solid var(--amber)}
+  header h1{margin:0 auto;max-width:720px;font-size:1.9rem}
+  main{max-width:720px;margin:0 auto;padding:20px 16px 48px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:20px;margin-bottom:18px}
+  h2{margin:0 0 14px;font-size:1.25rem}
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  label{display:block;font-size:.95rem;margin-bottom:4px}
+  input{width:100%;font:inherit;padding:10px;border:2px solid var(--line);border-radius:8px;background:#fff;color:var(--ink)}
+  input:focus-visible,button:focus-visible{outline:3px solid var(--amber);outline-offset:2px}
+  .nama{margin-bottom:12px}
+  .jumlah{font-size:1.6rem;font-weight:bold;margin:14px 0}
+  button{font:inherit;font-weight:bold;padding:12px 20px;border:0;border-radius:8px;cursor:pointer}
+  .utama{background:var(--teal);color:#fff;width:100%}
+  .padam{background:none;color:var(--red);padding:4px 8px;font-weight:normal;text-decoration:underline}
+  .kosong{background:#fff;color:var(--red);border:2px solid var(--red);margin-top:12px}
+  .skrol{overflow-x:auto}
+  table{width:100%;border-collapse:collapse;min-width:460px}
+  th,td{text-align:right;padding:8px;border-bottom:1px solid var(--line)}
+  th:first-child,td:first-child{text-align:left}
+  tfoot td{font-weight:bold;border-top:2px solid var(--ink);border-bottom:0}
+  .besar{font-size:1.4rem}
+  .nota{font-size:.9rem;color:#4b6462;margin:10px 0 0}
+  [hidden]{display:none}
+  @media(max-width:480px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header><h1>Kalkulator Karipap</h1></header>
+<main>
+  <div class="card">
+    <h2>Harga (setiap 10 biji, RM)</h2>
+    <div class="grid">
+      <div><label for="hDaging">Daging</label><input id="hDaging" type="number" min="0" step="0.01" value="7"></div>
+      <div><label for="hAyam">Ayam</label><input id="hAyam" type="number" min="0" step="0.01" value="7"></div>
+      <div><label for="hBiasa">Biasa</label><input id="hBiasa" type="number" min="0" step="0.01" value="6"></div>
+    </div>
+    <p class="nota">Jumlah dikira mengikut biji, jadi 25 biji karipap daging ialah 2.5 x harga.</p>
+  </div>
+
+  <div class="card">
+    <h2>Pesanan baru</h2>
+    <div class="nama"><label for="nama">Nama pelanggan (tidak wajib)</label><input id="nama" type="text" autocomplete="off"></div>
+    <div class="grid">
+      <div><label for="qDaging">Bilangan daging</label><input id="qDaging" type="number" min="0" step="1" inputmode="numeric" placeholder="0"></div>
+      <div><label for="qAyam">Bilangan ayam</label><input id="qAyam" type="number" min="0" step="1" inputmode="numeric" placeholder="0"></div>
+      <div><label for="qBiasa">Bilangan biasa</label><input id="qBiasa" type="number" min="0" step="1" inputmode="numeric" placeholder="0"></div>
+    </div>
+    <p class="jumlah">Jumlah pesanan ini: <span id="semasa">RM 0.00</span></p>
+    <button class="utama" id="tambah">Tambah pesanan</button>
+  </div>
+
+  <div class="card">
+    <h2>Senarai pesanan</h2>
+    <div class="skrol">
+      <table>
+        <thead><tr><th>Nama</th><th>Daging</th><th>Ayam</th><th>Biasa</th><th>RM</th><th></th></tr></thead>
+        <tbody id="badan"></tbody>
+        <tfoot><tr>
+          <td id="bilPesanan">0 pesanan</td><td id="tDaging">0</td><td id="tAyam">0</td><td id="tBiasa">0</td>
+          <td id="tRM" class="besar">0.00</td><td></td>
+        </tr></tfoot>
+      </table>
+    </div>
+    <p class="nota" id="kosongMsg">Belum ada pesanan. Isi bilangan di atas dan klik Tambah pesanan.</p>
+    <button class="kosong" id="kosongkan" hidden>Kosongkan semua pesanan</button>
+  </div>
+</main>
+<script>
+const $ = id => document.getElementById(id);
+let pesanan = [];
+try { pesanan = JSON.parse(localStorage.getItem("karipap") || "[]"); } catch(e) { pesanan = []; }
+
+const bil = id => Math.max(0, parseInt($(id).value, 10) || 0);
+const harga = id => Math.max(0, parseFloat($(id).value) || 0);
+const rm = sen => (sen / 100).toFixed(2);
+
+// harga setiap 10 biji dalam RM => sen setiap biji = harga * 10
+function kira(d, a, b, h){
+  return Math.round(d * h.d * 10) + Math.round(a * h.a * 10) + Math.round(b * h.b * 10);
+}
+function hargaSemasa(){ return {d: harga("hDaging"), a: harga("hAyam"), b: harga("hBiasa")}; }
+
+function kemasSemasa(){
+  $("semasa").textContent = "RM " + rm(kira(bil("qDaging"), bil("qAyam"), bil("qBiasa"), hargaSemasa()));
+}
+
+function simpan(){
+  try { localStorage.setItem("karipap", JSON.stringify(pesanan)); } catch(e) {}
+}
+
+function papar(){
+  const badan = $("badan");
+  badan.innerHTML = "";
+  let d = 0, a = 0, b = 0, sen = 0;
+  pesanan.forEach((p, n) => {
+    d += p.d; a += p.a; b += p.b; sen += p.sen;
+    const tr = document.createElement("tr");
+    const nama = p.nama || "Pesanan " + (n + 1);
+    [nama, p.d, p.a, p.b, rm(p.sen)].forEach(v => {
+      const td = document.createElement("td");
+      td.textContent = v;
+      tr.appendChild(td);
+    });
+    const td = document.createElement("td");
+    const btn = document.createElement("button");
+    btn.className = "padam";
+    btn.textContent = "Padam";
+    btn.onclick = () => { pesanan.splice(n, 1); simpan(); papar(); };
+    td.appendChild(btn);
+    tr.appendChild(td);
+    badan.appendChild(tr);
+  });
+  $("bilPesanan").textContent = pesanan.length + " pesanan";
+  $("tDaging").textContent = d;
+  $("tAyam").textContent = a;
+  $("tBiasa").textContent = b;
+  $("tRM").textContent = rm(sen);
+  $("kosongMsg").hidden = pesanan.length > 0;
+  $("kosongkan").hidden = pesanan.length === 0;
+}
+
+$("tambah").onclick = () => {
+  const d = bil("qDaging"), a = bil("qAyam"), b = bil("qBiasa");
+  if (d + a + b === 0) { $("qDaging").focus(); return; }
+  pesanan.push({nama: $("nama").value.trim(), d, a, b, sen: kira(d, a, b, hargaSemasa())});
+  simpan();
+  ["nama", "qDaging", "qAyam", "qBiasa"].forEach(id => $(id).value = "");
+  kemasSemasa();
+  papar();
+  $("nama").focus();
+};
+
+$("kosongkan").onclick = () => {
+  if (confirm("Padam semua pesanan dalam senarai?")) { pesanan = []; simpan(); papar(); }
+};
+
+["qDaging", "qAyam", "qBiasa", "hDaging", "hAyam", "hBiasa"].forEach(id => $(id).addEventListener("input", kemasSemasa));
+kemasSemasa();
+papar();
+</script>
+</body>
+</html>
