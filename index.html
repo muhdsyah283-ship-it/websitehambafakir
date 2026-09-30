@@ -49,7 +49,7 @@
 
   <div class="card">
     <h2>Pesanan baru</h2>
-    <div class="nama"><label for="nama">Nama pelanggan (tidak wajib)</label><input id="nama" type="text" autocomplete="off"></div>
+    <div class="nama"><label for="nama">Nama pelanggan</label></label><input id="nama" type="text" autocomplete="off"></div>
     <div class="grid">
       <div><label for="qDaging">Bilangan daging</label><input id="qDaging" type="number" min="0" step="1" inputmode="numeric" placeholder="0"></div>
       <div><label for="qAyam">Bilangan ayam</label><input id="qAyam" type="number" min="0" step="1" inputmode="numeric" placeholder="0"></div>
@@ -131,6 +131,7 @@ function papar(){
 
 $("tambah").onclick = () => {
   const d = bil("qDaging"), a = bil("qAyam"), b = bil("qBiasa");
+  if (!$("nama").value.trim()) { alert("Sila isi nama pelanggan."); $("nama").focus(); return; }
   if (d + a + b === 0) { $("qDaging").focus(); return; }
   pesanan.push({nama: $("nama").value.trim(), d, a, b, sen: kira(d, a, b, hargaSemasa())});
   simpan();
